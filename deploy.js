@@ -21,16 +21,14 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
 
 (async () => {
 	try {
-		console.log(`Started refreshing ${commands.length} application (/) commands.`);
+		console.log(`refresh.start.${commands.length}`);
 
-        // The Routes.applicationGuildCommands() call registers the commands only to the specific guild (server).
-        // This is much faster for testing than deploying globally.
 		const data = await rest.put(
 			Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
 			{ body: commands },
 		);
 
-		console.log(`Successfully reloaded ${data.length} application (/) commands.`);
+		console.log(`refresh.success.${data.length}`);
 	} catch (error) {
 		console.error(error);
 	}

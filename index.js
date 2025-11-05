@@ -31,7 +31,7 @@ for (const file of commandFiles) {
 
 
 
-client.on('ready', () => {
+client.on('clientReady', () => {
     console.log(`✅ Logged in as ${client.user.tag}!`);
     client.user.setActivity(`Slash Commands`, { type: 3 });
 });

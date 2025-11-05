@@ -25,15 +25,15 @@ for (const file of commandFiles) {
     if ('data' in command && 'execute' in command) {
         client.commands.set(command.data.name, command);
     } else {
-        console.warn(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
+        console.warn(`error.missingProperty.${filePath}`);
     }
 }
 
 
 
 client.on('clientReady', () => {
-    console.log(`✅ Logged in as ${client.user.tag}!`);
-    client.user.setActivity(`Slash Commands`, { type: 3 });
+    console.log(`ready.loginAs.${client.user.tag}`);
+    client.user.setActivity(`My current tag is ${client.user.tag}!`);
 });
 
 client.on('interactionCreate', async interaction => {

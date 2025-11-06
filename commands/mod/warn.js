@@ -1,18 +1,21 @@
+const { SlashCommandSubcommandBuilder } = require('@discordjs/builders');
 const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 
-module.exports = {
-    data: (builder) => builder
-        .setName('warn')
-        .setDescription('Issues an official warning to a user.')
-        .addUserOption(option =>
-            option.setName('target')
-                .setDescription('The member to warn.')
-                .setRequired(true))
-        .addStringOption(option =>
-            option.setName('reason')
-                .setDescription('The reason for the warning.')
-                .setRequired(true)),
+const subcommandData = new SlashCommandSubcommandBuilder()
+    .setName('warn')
+    .setDescription('Issues an official warning to a user.')
+    .addUserOption(option =>
+        option.setName('target')
+            .setDescription('The member to warn.')
+            .setRequired(true))
+    .addStringOption(option =>
+        option.setName('reason')
+            .setDescription('The reason for the warning.')
+            .setRequired(true));
 
+module.exports = {
+    data: subcommandData,
+    
     async execute(interaction) {
         await interaction.deferReply({ ephemeral: true }); 
 
@@ -35,7 +38,7 @@ module.exports = {
                 .setTimestamp();
                 
             await targetUser.send({ embeds: [dmEmbed] }).catch(() => {
-                 console.log(`Could not DM user ${targetUser.tag}.`);
+                 console.log(`error.dmUser.${targetUser.tag}.`);
             });
 
             const replyEmbed = new EmbedBuilder()

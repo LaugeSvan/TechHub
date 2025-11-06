@@ -1,18 +1,21 @@
+const { SlashCommandSubcommandBuilder } = require('@discordjs/builders');
 const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 
-module.exports = {
-    data: (builder) => builder
-        .setName('ban')
-        .setDescription('Bans a user from the server.')
-        .addUserOption(option =>
-            option.setName('target')
-                .setDescription('The member to ban.')
-                .setRequired(true))
-        .addStringOption(option =>
-            option.setName('reason')
-                .setDescription('The reason for the ban.')
-                .setRequired(false)),
+const subcommandData = new SlashCommandSubcommandBuilder()
+    .setName('ban')
+    .setDescription('Bans a user from the server.')
+    .addUserOption(option =>
+        option.setName('target')
+            .setDescription('The member to ban.')
+            .setRequired(true))
+    .addStringOption(option =>
+        option.setName('reason')
+            .setDescription('The reason for the ban.')
+            .setRequired(false));
 
+module.exports = {
+    data: subcommandData,
+    
     async execute(interaction) {
         await interaction.deferReply({ ephemeral: true });
 
@@ -25,14 +28,14 @@ module.exports = {
         }
         
         if (!targetMember) {
-             return interaction.editReply('That user is not a member of this server or they left before I could act.');
         }
-        if (targetMember.roles.highest.position >= interaction.guild.members.me.roles.highest.position) {
+        
+        if (targetMember && targetMember.roles.highest.position >= interaction.guild.members.me.roles.highest.position) {
             return interaction.editReply(`❌ I cannot ban ${targetUser.tag}. My highest role must be above theirs.`);
         }
 
         try {
-            await targetMember.ban({ reason, deleteMessageSeconds: 0 }); 
+            await interaction.guild.members.ban(targetUser.id, { reason, deleteMessageSeconds: 0 }); 
             
             const embed = new EmbedBuilder()
                 .setColor('#CC0000')

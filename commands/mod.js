@@ -1,4 +1,3 @@
-// commands/mod.js
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { PermissionFlagsBits } = require('discord.js');
 const fs = require('fs');
@@ -13,8 +12,13 @@ const data = new SlashCommandBuilder()
     .setDefaultMemberPermissions(PermissionFlagsBits.KickMembers);
 
 for (const file of subcommandFiles) {
-    const subcommand = require(path.join(__dirname, 'mod', file));
-    subcommand.data(data); 
+    const subcommandModule = require(path.join(__dirname, 'mod', file));
+    
+    if (subcommandModule.data) {
+        data.addSubcommand(subcommandModule.data);
+    } else {
+        console.warn(`error.noData.${file}`);
+    }
 }
 
 module.exports = {
@@ -23,13 +27,13 @@ module.exports = {
     async execute(interaction) {
         const subcommandName = interaction.options.getSubcommand();
         
-        const subcommandFile = require(path.join(__dirname, 'mod', `${subcommandName}.js`));
-        
         try {
+            const subcommandFile = require(path.join(__dirname, 'mod', `${subcommandName}.js`));
             await subcommandFile.execute(interaction);
+            
         } catch (error) {
-            console.error(error);
-            await interaction.reply({ content: `An error occurred while running /mod ${subcommandName}.`, ephemeral: true });
+            console.error(`error.run./mod.${subcommandName}:`, error);
+            await interaction.reply({ content: `An unexpected error occurred while running /mod ${subcommandName}.`, ephemeral: true });
         }
     },
 };

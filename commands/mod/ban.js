@@ -1,5 +1,7 @@
 const { SlashCommandSubcommandBuilder } = require('@discordjs/builders');
-const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
+const { EmbedBuilder, PermissionFlagsBits, ChannelType } = require('discord.js');
+
+const MOD_LOG_CHANNEL_ID = '1434814467119779880';
 
 const subcommandData = new SlashCommandSubcommandBuilder()
     .setName('ban')
@@ -23,11 +25,8 @@ module.exports = {
         const reason = interaction.options.getString('reason') || 'No reason provided.';
         const targetMember = interaction.guild.members.cache.get(targetUser.id);
 
-        if (!interaction.member.permissions.has(PermissionFlagsBits.BanMembers)) {
-            return interaction.editReply("❌ You do not have permission to ban members.");
-        }
-        
-        if (!targetMember) {
+        if (targetMember && targetMember.roles.highest.position >= interaction.member.roles.highest.position) {
+            return interaction.editReply(`❌ You cannot ban ${targetUser.tag} because your highest role is not above theirs.`);
         }
         
         if (targetMember && targetMember.roles.highest.position >= interaction.guild.members.me.roles.highest.position) {
@@ -42,9 +41,21 @@ module.exports = {
                 .setDescription(`🔨 **${targetUser.tag}** has been permanently banned. \nReason: *${reason}*`);
 
             await interaction.editReply({ embeds: [embed] });
+
+            const logChannel = interaction.guild.channels.cache.get(MOD_LOG_CHANNEL_ID);
+            if (logChannel && logChannel.type === ChannelType.GuildText) {
+                logChannel.send(`**[MOD LOG - BAN]** ${targetUser.tag} was banned by ${interaction.user.tag}. Reason: ${reason}`);
+            } else {
+                console.warn('error.modLogChannelNotFound');
+            }
+            
         } catch (error) {
             console.error(error);
-            await interaction.editReply(`An error occurred while trying to ban ${targetUser.tag}. Check bot permissions.`);
+            if (error.code === 10013) {
+                await interaction.editReply(`An error occurred while trying to ban ${targetUser.tag}. Check bot permissions.`);
+            } else {
+                 await interaction.editReply(`An error occurred while trying to ban ${targetUser.tag}. Check bot permissions.`);
+            }
         }
     },
 };

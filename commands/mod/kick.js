@@ -1,5 +1,7 @@
 const { SlashCommandSubcommandBuilder } = require('@discordjs/builders');
-const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
+const { EmbedBuilder, PermissionFlagsBits, ChannelType } = require('discord.js'); // Added ChannelType
+
+const MOD_LOG_CHANNEL_ID = '1434814467119779880';
 
 const subcommandData = new SlashCommandSubcommandBuilder()
     .setName('kick')
@@ -23,13 +25,10 @@ module.exports = {
         const reason = interaction.options.getString('reason') || 'No reason provided.';
         const targetMember = interaction.guild.members.cache.get(targetUser.id);
         
-        if (!interaction.member.permissions.has(PermissionFlagsBits.KickMembers)) {
-            return interaction.editReply("❌ You do not have permission to kick members.");
-        }
-
         if (!targetMember) {
              return interaction.editReply('That user is not a member of this server.');
         }
+        
         if (targetMember.roles.highest.position >= interaction.guild.members.me.roles.highest.position) {
             return interaction.editReply(`❌ I cannot kick ${targetUser.tag}. My highest role must be above theirs.`);
         }
@@ -41,6 +40,14 @@ module.exports = {
                 .setDescription(`✅ **${targetUser.tag}** has been kicked. \nReason: *${reason}*`);
 
             await interaction.editReply({ embeds: [embed] });
+
+            const logChannel = interaction.guild.channels.cache.get(MOD_LOG_CHANNEL_ID);
+            if (logChannel && logChannel.type === ChannelType.GuildText) {
+                logChannel.send(`**[MOD LOG - KICK]** ${targetUser.tag} was kicked by ${interaction.user.tag}. Reason: ${reason}`);
+            } else {
+                console.warn('error.modLogChannelNotFound');
+            }
+
         } catch (error) {
             console.error(error);
             await interaction.editReply(`I failed to kick ${targetUser.tag}. Check bot permissions.`);

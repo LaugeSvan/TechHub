@@ -1,15 +1,15 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { PermissionFlagsBits } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
+
+const REQUIRED_ROLE_ID = '1434578752981041233';
 
 const subcommandFiles = fs.readdirSync(path.join(__dirname, 'mod'))
     .filter(file => file.endsWith('.js'));
 
 const data = new SlashCommandBuilder()
     .setName('mod')
-    .setDescription('Moderation commands for the server.')
-    .setDefaultMemberPermissions(PermissionFlagsBits.KickMembers);
+    .setDescription('Moderation commands for the server.');
 
 for (const file of subcommandFiles) {
     const subcommandModule = require(path.join(__dirname, 'mod', file));
@@ -25,6 +25,15 @@ module.exports = {
     data,
     
     async execute(interaction) {
+        const member = interaction.member; 
+
+        if (!member.roles.cache.has(REQUIRED_ROLE_ID)) {
+            return interaction.reply({ 
+                content: `You do not have the required role (<@&${REQUIRED_ROLE_ID}>) to use the \`/mod\` commands.`, 
+                ephemeral: true 
+            });
+        }
+        
         const subcommandName = interaction.options.getSubcommand();
         
         try {

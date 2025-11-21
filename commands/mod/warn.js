@@ -30,7 +30,7 @@ const subcommandData = new SlashCommandSubcommandBuilder()
         option.setName('duration')
             .setDescription(`The duration of the timeout (Defaults to ${DEFAULT_DURATION_NAME}).`)
             .setRequired(false);
-        
+
         for (const [name, ms] of Object.entries(TIMEOUT_DURATIONS)) {
             option.addChoices({ name: name, value: String(ms) });
         }
@@ -39,30 +39,38 @@ const subcommandData = new SlashCommandSubcommandBuilder()
 
 module.exports = {
     data: subcommandData,
-    
+
     async execute(interaction) {
-        await interaction.deferReply({ ephemeral: true }); 
+        await interaction.deferReply({ ephemeral: true });
 
         const targetUser = interaction.options.getUser('target');
         const reason = interaction.options.getString('reason');
         const durationChoice = interaction.options.getString('duration');
         const timeoutDurationMS = durationChoice ? parseInt(durationChoice, 10) : DEFAULT_DURATION_MS;
-        const durationName = Object.keys(TIMEOUT_DURATIONS).find(key => TIMEOUT_DURATIONS[key] === timeoutDurationMS) || `${timeoutDurationMS / 3600000} hours`;
-        
+        const durationName = Object.keys(TIMEOUT_DURATIONS).find(key => TIMEOUT_DURATIONS[key] === timeoutDurationMS) 
+            || `${timeoutDurationMS / 3600000} hours`;
+
         const targetMember = interaction.guild.members.cache.get(targetUser.id);
 
         if (!targetMember) {
             return interaction.editReply('That user is not a member of this server.');
         }
 
+        // User role hierarchy check
         if (targetMember.roles.highest.position >= interaction.member.roles.highest.position) {
             return interaction.editReply(`❌ You cannot warn ${targetUser.tag} because your highest role is not above theirs.`);
         }
 
+        // Bot role hierarchy check
         if (targetMember.roles.highest.position >= interaction.guild.members.me.roles.highest.position) {
             return interaction.editReply(`❌ I cannot timeout ${targetUser.tag}. My highest role must be above theirs.`);
         }
-        
+
+        // NEW — Administrator check
+        if (targetMember.permissions.has(PermissionFlagsBits.Administrator)) {
+            return interaction.editReply(`❌ I cannot timeout ${targetUser.tag} because they are an administrator.`);
+        }
+
         try {
             const dmEmbed = new EmbedBuilder()
                 .setColor('#FFA500')
@@ -74,7 +82,7 @@ module.exports = {
                 )
                 .setFooter({ text: `A ${durationName} timeout has also been applied.` })
                 .setTimestamp();
-                
+
             await targetUser.send({ embeds: [dmEmbed] }).catch(() => {
                 console.log(`error.dmUser.${targetUser.tag}.`);
             });
@@ -83,9 +91,8 @@ module.exports = {
 
             const replyEmbed = new EmbedBuilder()
                 .setColor('#00AA00')
-                // --- UPDATE REPLY TO USE SELECTED DURATION NAME ---
                 .setDescription(`✅ Successfully **warned** and applied a **${durationName} timeout** to ${targetUser.tag}. \nReason: *${reason}*`);
-            
+
             await interaction.editReply({ embeds: [replyEmbed] });
 
             const logChannel = interaction.guild.channels.cache.get(MOD_LOG_CHANNEL_ID);
